@@ -1,0 +1,12 @@
+eclipse.preferences.version=1
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.1358901278/NDKROOT/delimiter=;
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.1358901278/NDKROOT/operation=append
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.1358901278/NDKROOT/value=${NDKROOT}
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.1358901278/Opencv/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.1358901278/Opencv/operation=replace
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.1358901278/Opencv/value=/Users/gaoboning/Downloads/OpenCV-2.4.9-android-sdk/sdk/native/jni/include/
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.1358901278/PATH/delimiter=\:
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.1358901278/PATH/operation=replace
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.1358901278/PATH/value=/usr/bin\:/bin\:/usr/sbin\:/sbin\:/Users/gaoboning/NDK\:/Users/gaoboning/Downloads/OpenCV-2.4.9-android-sdk/sdk/native/jni/include/
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.1358901278/append=true
+environment/project/cdt.managedbuild.config.gnu.mingw.exe.debug.1358901278/appendContributed=true

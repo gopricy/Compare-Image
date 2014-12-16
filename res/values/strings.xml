@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Test Location</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="take_picture">Take Picture</string>
+    <string name="take_picture_instruction">Take a picture here.</string>
+    <string name="take_another_picture">Take another Picture</string>
+    <string name="show_picture">Show Picture</string>
+    <string name="show_picture_instruction">The picture just taken.</string>
+    <string name="compare_picture_result">Similar to No.? image.</string>
+    <string name="get_location">Get location</string>
+    <string name="map_title">SUTD campus</string>
+    <string name="title_activity_take_picture1">TakePicture1</string>
+    <string name="title_activity_show_picture1">ShowPicture1</string>
+    <string name="title_activity_compare_picture">ComparePicture</string>
+    <string name="cannot">Cannot</string>
+    <string name="album_name">testSIFT</string>
+    <string name="compareImage">Your image</string>
+    <string name="matchImage">match image</string>
+
+</resources>
