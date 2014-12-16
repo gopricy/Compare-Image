@@ -1,16 +1,10 @@
 package com.example.testlocation;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import android.content.res.AssetManager;
-import android.content.res.XmlResourceParser;
-
-import javax.xml.parsers.*;
 
 import org.ejml.simple.SimpleMatrix;
 import org.ejml.simple.SimpleSVD;
@@ -20,14 +14,11 @@ import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Point;
 import org.opencv.features2d.DMatch;
 import org.opencv.features2d.KeyPoint;
-import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapFactory.Options;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -36,17 +27,14 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+// NOTICE: when generate javadoc, add '-J-Duser.language=en' in VM option
 /**
- * @author Zhou Yiren (SUTD) 2014
+ * @author Zhou Yiren
  * 
  *
  */
-
-// extends ActionBarActivity 
-public class ComparePicture extends ActionBarActivity{
+public class ComparePicture extends ActionBarActivity {
 	// load the .so file for SIFT model
-	private static final String INTERNAL_STORAGE_STRING = Environment.getExternalStorageDirectory().toString();
-	private String currentPhotoPath;
 	static 
 	{
 		try
@@ -64,35 +52,27 @@ public class ComparePicture extends ActionBarActivity{
 			System.err.println("Native code library failed to load.\n" + e);
 		}
 	}
-
-	/* TODO part: 
-	 * define variables
-	 */
-	MatOfKeyPoint Keypoint_Input = new MatOfKeyPoint(); 
-	Mat Descriptor_Input = new Mat(); 
 	
-	private void parseXmlFile(){
-		DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-		try {
-			Log.e("XML", "Start");
-			//parse using builder to get DOM representation of the XML file
-			AssetManager assetManager = getAssets();
+	// private variables
+	private ImageView imageView1;
+	private ImageView imageView2;
+	private TextView textView;
+	
+	private Bitmap matchImageBitmap;
+    // SIFT keypoint and descriptor
+	private MatOfKeyPoint keypoints_query = new MatOfKeyPoint();
+	private Mat descriptors_query = new Mat();
+	private MatOfKeyPoint keypoints_compare = new MatOfKeyPoint();
+	private Mat descriptors_compare = new Mat();`
 			
-			XmlResourceParser xrp = assetManager.openXmlResourceParser("image_data1");
-			Log.e("XML", xrp.toString());
-			
-		}catch(IOException ioe) {
-			ioe.printStackTrace();
-		}
-	}
-
-//	
-//	public static void main(String[] args) {
-//		getSIFT("res/drawable-ldpi-v4/sketch.jpg",a,b);
-//		System.out.println(a);
-//		System.out.println(b);
-//	}
-
+	private static final String JPEG_FILE_PREFIX = "IMG_";
+	private static final String FILE_TYPE = ".jpg";
+	private static final String FILE_TYPE_DATA = ".xml";
+	// number of dataset image
+	private int NumCompare = 11;
+	
+	private double thresh = 1.5;
+	private int maxIteration = 50;
 	
 	// extract the needed coordinate
 	/**
@@ -104,14 +84,18 @@ public class ComparePicture extends ActionBarActivity{
 	 * @param arraylist2 coordinates of matched points in the second image
 	 */
 	void extractMatchCoordinate(MatOfKeyPoint kp1, MatOfKeyPoint kp2, MatOfDMatch matches, ArrayList<Point> arraylist1, ArrayList<Point> arraylist2){
-		/* TODO part:
-		 * fill up the function code
-		 */
+		List<KeyPoint> list1 = kp1.toList();
+		List<KeyPoint> list2 = kp2.toList();
+		List<DMatch> match = matches.toList();
 		
-		
-		
+		// get the match coordinate
+		for (int i = 0; i < match.size(); i++){
+			DMatch match_idx = match.get(i);
+			arraylist1.add(list1.get(match_idx.queryIdx).pt);
+			arraylist2.add(list2.get(match_idx.trainIdx).pt);
+		}
 	}
-
+	
 	// add all the 2-D array(with same size) in the list to one single 2-D array
 	private double[][] get_whole_matrix(List<double[][]> list){
 		double[][] array = new double[][]{};
@@ -121,7 +105,7 @@ public class ComparePicture extends ActionBarActivity{
 		}
 		return list_temp.toArray(array);
 	}
-
+	
 	// convert 1-D array to 2-D array
 	private double[][] oneDtwoD(double[] a, int m, int n){
 		if (a.length != m*n){
@@ -135,11 +119,34 @@ public class ComparePicture extends ActionBarActivity{
 		}
 		return A;
 	}
+	
+	// get matrix product
+	private double[][] matrix_product(double[][] A, double[][] B) {
 
-	/* TODO part:
-	 * private functions that are needed for RANSAC
-	 */
+        int aRows = A.length;
+        int aColumns = A[0].length;
+        int bRows = B.length;
+        int bColumns = B[0].length;
 
+        if (aColumns != bRows) {
+            throw new IllegalArgumentException("A:Rows: " + aColumns + " did not match B:Columns " + bRows + ".");
+        }
+        double[][] C = new double[aRows][bColumns];
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < 2; j++) {
+                C[i][j] = 0.00000;
+            }
+        }
+        for (int i = 0; i < aRows; i++) { // aRow
+            for (int j = 0; j < bColumns; j++) { // bColumn
+                for (int k = 0; k < aColumns; k++) { // aColumn
+                    C[i][j] += A[i][k] * B[k][j];
+                }
+            }
+        }
+        return C;
+    }
+	
 	// get homography score
 	/**
 	 * Method to get homography score based on difference value;
@@ -150,14 +157,11 @@ public class ComparePicture extends ActionBarActivity{
 	 * @return number of match
 	 */
 	int score_homography(double[][] x1, double[][] x2, int threshold){
-		/* TODO part:
-		 * function to compute number of RANSAC match points
-		 */	
 		return 0;
-
 	}
+	
 
-
+	// new function added on Nov 23, 2014
 	// get transformation matrix
 	/**
 	 * Method to estimate the transformation matrix
@@ -173,7 +177,7 @@ public class ComparePicture extends ActionBarActivity{
 		double[][] x2 = new double[3][3];
 		// initialize the list_A
 		List<double[][]> list_A = new ArrayList<double[][]>();
-
+		
 		// get the random selected point pairs
 		for (int j = 0; j < num_choose; j++){
 			// x1
@@ -188,7 +192,6 @@ public class ComparePicture extends ActionBarActivity{
 
 		// get matrix A
 		double[][] A = get_whole_matrix(list_A);
-		Log.i("Size of A:", "	" + A.length + "!!!" + A[0].length);
 		// convert A to matrix
 		SimpleMatrix matA = new SimpleMatrix(A);
 		// get SVD of A
@@ -207,10 +210,9 @@ public class ComparePicture extends ActionBarActivity{
 
 		// get matrix H
 		double[][] H = oneDtwoD(v9, 3, 3);
-		Log.i("Size of H:", "	" + H.length + "!!!" + H[0].length);
 		return H;
 	}
-
+	
 	// using RANSAC to compare the two matched keypoints
 	/**
 	 * Method for apply RANSAC
@@ -220,29 +222,94 @@ public class ComparePicture extends ActionBarActivity{
 	 * @return number of match after RANSAC
 	 */
 	int RANSAC_match(ArrayList<Point> AL1, ArrayList<Point> AL2, int maxTime){
-		/* TODO part:
-		 * RANSAC function
-		 */
 		return 0;
-
 	}
-
-
+	
+	
 	/* (non-Javadoc)
 	 * @see android.support.v7.app.ActionBarActivity#onCreate(android.os.Bundle)
 	 */
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		/* TODO part:
-		 * compare the query image with all dataset images, and get the best match image to show
-		 */
 		super.onCreate(savedInstanceState);
-		parseXmlFile();
-		File imagesFolder = new File(INTERNAL_STORAGE_STRING,
-				"TestLocation");
-		File f = new File(imagesFolder, "query_image_small.jpg");
-		getSIFT(f.getAbsolutePath(), Keypoint_Input.getNativeObjAddr(), Descriptor_Input.getNativeObjAddr());
-		//Log.e("SIFT", Keypoint_Input.toString() + Descriptor_Input.toString());
+		
+		Log.d("TestLog","ComparePicture: onCreate");
+
+		
+		
+		setContentView(R.layout.activity_compare_picture);
+		
+		imageView1 = (ImageView)findViewById(R.id.compareImageView1); 
+		imageView2 = (ImageView)findViewById(R.id.compareImageView2); 
+		textView = (TextView)findViewById(R.id.CompareResult); 
+		     
+		// get query image SIFT descriptors
+		String queryPath = ((GlobalVariables)getApplication()).getPath();
+		String queryName = ((GlobalVariables)getApplication()).getNameSmall();
+		
+		Log.d("TestLog","ComparePicture: " + queryPath);
+		Log.d("TestLog","ComparePicture: " + queryName);
+		
+		
+		File queryFile = new File(queryPath, queryName);
+		// get new mat for match
+		MatOfDMatch matches = new MatOfDMatch();
+		
+		Log.i("!!!!!!!", queryFile.getAbsolutePath());
+		
+        // compute keypoints and descriptors from the input query image
+		getSIFT(queryFile.getAbsolutePath(), keypoints_query.getNativeObjAddr(), descriptors_query.getNativeObjAddr());
+        
+		// get SIFT descriptors from image list, and get matching score based on RANSAC
+		String comparePath = queryPath + "/land_mark";
+
+		// string to show the compare result
+		String result_text = "Compare result:\n";
+
+		int i = 7;	// compare with database image 7
+		int numberOfCorrectCorrespondence = 0;
+		
+
+		// get new arraylist to store the matched coordinates
+		ArrayList<Point> coordinate_query = new ArrayList<Point>();
+		ArrayList<Point> coordinate_compare = new ArrayList<Point>();
+		// get single image descriptors
+		// by directly loading the data file
+		String compareNameData = "image_data" + String.valueOf(i) + FILE_TYPE_DATA;
+		File compareFileData = new File(comparePath, compareNameData);
+		Log.i("Compare data name:", compareFileData.getAbsolutePath());
+		// load keypoints and descriptors for a database image
+		getKeypointAndDescriptor(compareFileData.getAbsolutePath(), keypoints_compare.getNativeObjAddr(), descriptors_compare.getNativeObjAddr());
+		// match the two descriptors
+		getMATCH(descriptors_query.getNativeObjAddr(), descriptors_compare.getNativeObjAddr(), matches.getNativeObjAddr());
+		// extract the needed coordinate
+		extractMatchCoordinate(keypoints_query, keypoints_compare, matches, coordinate_query, coordinate_compare);
+		// using RANSAC to compare the two matched keypoints
+		numberOfCorrectCorrespondence = RANSAC_match(coordinate_query, coordinate_compare, maxIteration);
+		
+		Log.d("TestLog", "numberOfCorrectCorrespondence: " + numberOfCorrectCorrespondence);
+		Log.d("TestLog", "query: " + coordinate_query.size());
+		Log.d("TestLog", "database: " + coordinate_compare.size());
+		
+		// add the result to result text
+		result_text = result_text + "Image" + Integer.toString(i) + ":	" + Integer.toString(numberOfCorrectCorrespondence) + "/" + Integer.toString(coordinate_query.size()) + "\n";
+
+		
+		// show the two images
+		final Options options = new Options();
+		// show query image
+		matchImageBitmap = BitmapFactory.decodeFile(queryFile.getAbsolutePath(), options);
+		imageView1.setImageBitmap(matchImageBitmap);
+		imageView1.setVisibility(View.VISIBLE);
+		// show match image
+		String matchName = String.valueOf(i) + FILE_TYPE;
+		File matchFile = new File(comparePath, matchName);
+		matchImageBitmap = BitmapFactory.decodeFile(matchFile.getAbsolutePath(), options);
+		imageView2.setImageBitmap(matchImageBitmap);
+		imageView2.setVisibility(View.VISIBLE);
+		
+		// show the match result for all dataset images
+		textView.setText(result_text);
 	}
 	
 	/* (non-Javadoc)
@@ -269,7 +336,7 @@ public class ComparePicture extends ActionBarActivity{
 		}
 		return super.onOptionsItemSelected(item);
 	}
-
+	
 	/*JNI functions
 	 * we use this to call functions inside jni folder
 	 */
