@@ -302,8 +302,8 @@ public class ComparePicture extends ActionBarActivity {
 			}
 			i = 0;
 			for(Point p : AL2){
-				first[i][0] = p.x;
-				first[i][1] = p.y;
+				second[i][0] = p.x;
+				second[i][1] = p.y;
 				i++;
 			}
 
