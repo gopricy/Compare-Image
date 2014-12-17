@@ -63,7 +63,7 @@ public class ComparePicture extends ActionBarActivity {
 	private MatOfKeyPoint keypoints_query = new MatOfKeyPoint();
 	private Mat descriptors_query = new Mat();
 	private MatOfKeyPoint keypoints_compare = new MatOfKeyPoint();
-	private Mat descriptors_compare = new Mat();`
+	private Mat descriptors_compare = new Mat();
 			
 	private static final String JPEG_FILE_PREFIX = "IMG_";
 	private static final String FILE_TYPE = ".jpg";
@@ -276,14 +276,26 @@ public class ComparePicture extends ActionBarActivity {
 		// get single image descriptors
 		// by directly loading the data file
 		String compareNameData = "image_data" + String.valueOf(i) + FILE_TYPE_DATA;
+		
+		
+		
 		File compareFileData = new File(comparePath, compareNameData);
 		Log.i("Compare data name:", compareFileData.getAbsolutePath());
 		// load keypoints and descriptors for a database image
 		getKeypointAndDescriptor(compareFileData.getAbsolutePath(), keypoints_compare.getNativeObjAddr(), descriptors_compare.getNativeObjAddr());
+		
+		// Log.e("NULL?", descriptors_compare.toString());
+		
 		// match the two descriptors
+			
+		// Log.e("Test","If here1");
 		getMATCH(descriptors_query.getNativeObjAddr(), descriptors_compare.getNativeObjAddr(), matches.getNativeObjAddr());
 		// extract the needed coordinate
+		// Log.e("Test","If here2");
 		extractMatchCoordinate(keypoints_query, keypoints_compare, matches, coordinate_query, coordinate_compare);
+		
+		// Log.e("Test","If here");
+		
 		// using RANSAC to compare the two matched keypoints
 		numberOfCorrectCorrespondence = RANSAC_match(coordinate_query, coordinate_compare, maxIteration);
 		
@@ -294,7 +306,6 @@ public class ComparePicture extends ActionBarActivity {
 		// add the result to result text
 		result_text = result_text + "Image" + Integer.toString(i) + ":	" + Integer.toString(numberOfCorrectCorrespondence) + "/" + Integer.toString(coordinate_query.size()) + "\n";
 
-		
 		// show the two images
 		final Options options = new Options();
 		// show query image

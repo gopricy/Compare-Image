@@ -77,6 +77,12 @@ JNIEXPORT void JNICALL Java_com_example_testlocation_ComparePicture_getMATCH(JNI
 	// get mat file
 	Mat& descriptors1 = *(Mat*)addrDescriptors1;
 	Mat& descriptors2 = *(Mat*)addrDescriptors2;
+
+	if ( descriptors1.empty() )
+	   cvError(0,"MatchFinder","1st descriptor empty",__FILE__,__LINE__);
+	if ( descriptors2.empty() )
+	   cvError(0,"MatchFinder","2nd descriptor empty",__FILE__,__LINE__);
+
 	Mat& matches_mat = *(Mat*)addrMatches;
 	vector<DMatch>* matches = new vector<DMatch>();
 
